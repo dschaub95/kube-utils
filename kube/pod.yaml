@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  labels:
+    run: pod-darius
+  name: pod-darius
+  namespace: darius
+spec:
+  volumes:
+  - name: volume-darius
+    persistentVolumeClaim:
+      claimName: pvc-darius
+  containers:
+  - args:
+    - bash
+    image: nvidia/cuda:12.0.1-cudnn8-runtime-ubuntu20.04
+    imagePullPolicy: IfNotPresent
+    resources:
+      limits:
+        nvidia.com/gpu: 1
+    volumeMounts:
+    - name: volume-darius
+      mountPath: "/data/"
+    name: darius
+    stdin: true
+    stdinOnce: true
+    terminationMessagePath: /dev/termination-log
+    terminationMessagePolicy: File
+    tty: true
+  dnsPolicy: ClusterFirst
+  enableServiceLinks: true
+  preemptionPolicy: PreemptLowerPriority
+  priority: 0
+  restartPolicy: Always
+  schedulerName: default-scheduler
+  securityContext: {}
+  serviceAccount: default
+  serviceAccountName: default
+  terminationGracePeriodSeconds: 30
