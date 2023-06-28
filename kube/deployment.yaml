@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+      app: deployment-darius
+    name: deployment-darius
+    namespace: darius
+spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: darius
+    strategy:
+      rollingUpdate:
+      type: Recreate
+    template:
+      metadata:
+        labels:
+          app: darius
+      spec:
+        volumes:
+        # - name: volume-darius
+        #   persistentVolumeClaim:
+        #     claimName: pvc-darius
+        - name: volume-darius-data
+          persistentVolumeClaim:
+            claimName: pvc-darius-data
+        containers:
+        - command:
+          - sleep
+          - infinity
+          image: registry.ims.bio/cuda:12.0.1-conda
+          imagePullPolicy: IfNotPresent
+          name: darius
+          resources:
+            limits:
+              nvidia.com/gpu: "1"
+          volumeMounts:
+          - name: volume-darius-data
+            mountPath: "/data/"
+        dnsPolicy: ClusterFirst
+        enableServiceLinks: true
+        preemptionPolicy: PreemptLowerPriority
+        priority: 0
+        # nodeSelector:
+          #kubernetes.io/hostname: deltabonn-5
+          #nvidia.com/gpu.product: NVIDIA-H100-PCIe
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        
