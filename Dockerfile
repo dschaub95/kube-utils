@@ -5,11 +5,14 @@ ARG OS_TYPE=x86_64
 # FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 FROM nvidia/cuda:12.0.1-cudnn8-runtime-ubuntu20.04
 
+ENV LANG=C.UTF-8
+
 # System packages 
 RUN apt-get update && apt-get install -y build-essential curl wget nano
 # RUN apt-get install -y r-base
 RUN apt upgrade -y
 RUN apt install -y build-essential
+RUN apt update && apt install -y git
 
 # Use the above args 
 ARG CONDA_VER
