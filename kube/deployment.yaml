@@ -29,9 +29,13 @@ spec:
         - command:
           - sleep
           - infinity
-          image: registry.ims.bio/cuda:12.0.1-conda
+          # image: registry.ims.bio/cuda:12.0.1-conda
+          image: registry.ims.bio/cuda:latest-v3
           imagePullPolicy: IfNotPresent
           name: darius
+          envFrom:
+          - configMapRef:
+              name: proxy-config
           resources:
             limits:
               nvidia.com/gpu: "1"
