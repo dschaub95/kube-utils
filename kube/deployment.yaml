@@ -22,9 +22,9 @@ spec:
         # - name: volume-darius
         #   persistentVolumeClaim:
         #     claimName: pvc-darius
-        - name: volume-darius-data
+        - name: volume-darius
           persistentVolumeClaim:
-            claimName: pvc-darius-data
+            claimName: pvc-darius
         containers:
         - command:
           - sleep
@@ -36,15 +36,15 @@ spec:
             limits:
               nvidia.com/gpu: "1"
           volumeMounts:
-          - name: volume-darius-data
+          - name: volume-darius
             mountPath: "/data/"
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
         priority: 0
-        # nodeSelector:
+        nodeSelector:
           #kubernetes.io/hostname: deltabonn-5
-          #nvidia.com/gpu.product: NVIDIA-H100-PCIe
+          nvidia.com/gpu.product: NVIDIA-H100-PCIe-SHARED
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}

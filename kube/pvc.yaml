@@ -4,8 +4,10 @@ metadata:
   name: pvc-darius
   namespace: darius
 spec:
+  # storageClassName: sc-b
+  # storageClassName: sc-a
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   resources:
     requests:
-      storage: 10Gi
+      storage: 2Ti
