@@ -1,0 +1,12 @@
+apiVersion: v1
+data:
+  HTTP_PROXY: http://proxy1.zmnh.uni-hamburg.de:8888/
+  HTTPS_PROXY: http://proxy1.zmnh.uni-hamburg.de:8888/
+  NO_PROXY: localhost,127.0.0.1,172.16.0.0/12,jh.bonn-pe940.zmnh.uni-hamburg.de,bonn-dgx1.zmnh.uni-hamburg.de,intranet.zmnh.uni-hamburg.de,jh.int.ims.bio,deltabonn-5.zmnh.uni-hamburg.de,deltabonn-5,registry.zmnh.uni-hamburg.de,registry.ims.bio,int.ims.bio,.int.ims.bio,zmnh.umi-hamburg.de,.zmhn.uni-hamburg.de,10.0.0.0/8
+  http_proxy: http://proxy1.zmnh.uni-hamburg.de:8888/
+  https_proxy: http://proxy1.zmnh.uni-hamburg.de:8888/
+  no_proxy: localhost,127.0.0.1,172.16.0.0/12,jh.bonn-pe940.zmnh.uni-hamburg.de,bonn-dgx1.zmnh.uni-hamburg.de,intranet.zmnh.uni-hamburg.de,jh.int.ims.bio,deltabonn-5.zmnh.uni-hamburg.de,deltabonn-5,registry.zmnh.uni-hamburg.de,registry.ims.bio,int.ims.bio,.int.ims.bio,zmnh.umi-hamburg.de,.zmhn.uni-hamburg.de,10.0.0.0/8
+kind: ConfigMap
+metadata:
+  name: proxy-config
+  namespace: darius
