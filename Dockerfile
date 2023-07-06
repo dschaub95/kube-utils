@@ -9,10 +9,14 @@ ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
 
+ENV TZ=Europe/Berlin
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 # System packages 
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y build-essential curl wget nano jq zip git screen\
+    && apt-get install -y ffmpeg libsm6 libxext6 \
     && apt-get update \
     && apt-get upgrade -y
 
