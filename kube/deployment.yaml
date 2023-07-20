@@ -6,7 +6,7 @@ metadata:
     name: deployment-darius
     namespace: darius
 spec:
-    replicas: 1
+    replicas: 3
     selector:
       matchLabels:
         app: darius
@@ -15,9 +15,20 @@ spec:
       type: Recreate
     template:
       metadata:
+        creationTimestamp: null
         labels:
           app: darius
       spec:
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - darius
+              topologyKey: kubernetes.io/hostname
         volumes:
         # - name: volume-darius
         #   persistentVolumeClaim:
@@ -37,9 +48,9 @@ spec:
           - configMapRef:
               name: proxy-config
           resources:
-            limits:
-              memory: "230Gi"
-              nvidia.com/gpu: "1"
+            # limits:
+              # memory: "230Gi"
+              # nvidia.com/gpu: "1"
           volumeMounts:
           - name: volume-darius
             mountPath: "/data/"
@@ -47,9 +58,9 @@ spec:
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
         priority: 0
-        nodeSelector:
-          #kubernetes.io/hostname: deltabonn-5
-          nvidia.com/gpu.product: NVIDIA-H100-PCIe-SHARED
+        # nodeSelector:
+        #   #kubernetes.io/hostname: deltabonn-5
+        #   nvidia.com/gpu.product: NVIDIA-H100-PCIe-SHARED
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
