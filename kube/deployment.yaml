@@ -49,6 +49,7 @@ spec:
               name: proxy-config
           resources:
             limits:
+              cpu: "20000m"
               memory: "128Gi"
               nvidia.com/gpu: "1"
           volumeMounts:
