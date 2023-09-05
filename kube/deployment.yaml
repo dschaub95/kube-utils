@@ -61,7 +61,7 @@ spec:
         priority: 0
         nodeSelector:
           kubernetes.io/hostname: bonn-dgx-a100
-          nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
+          # nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
