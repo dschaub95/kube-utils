@@ -30,9 +30,6 @@ spec:
         #           - darius
         #       topologyKey: kubernetes.io/hostname
         volumes:
-        # - name: volume-darius
-        #   persistentVolumeClaim:
-        #     claimName: pvc-darius
         - name: volume-darius
           persistentVolumeClaim:
             claimName: pvc-darius

@@ -8,9 +8,12 @@ To setup a persistent volume claim for the current user, run:
 kubectl apply -f ./kube/pvc.yaml
 ```
 
-To setup a pod for the current user, run:
+To setup a config map for any user, run:
 ```bash
-kubectl apply -f ./kube/pod.yaml
+kubectl apply -f ./kube/config_map.yaml
 ```
 
-Here apply also updates the pod if it already exists.
+To setup a deployment for the current user, run:
+```bash
+kubectl apply -f ./kube/deployment.yaml
+```
