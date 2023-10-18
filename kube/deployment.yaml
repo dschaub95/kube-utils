@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
     labels:
-      app: deployment-darius
+      app: darius
     name: deployment-darius
     namespace: darius
 spec:
@@ -11,31 +11,38 @@ spec:
       matchLabels:
         app: darius
     strategy:
-      rollingUpdate:
       type: Recreate
     template:
       metadata:
-        creationTimestamp: null
+        # creationTimestamp: null
         labels:
           app: darius
       spec:
-        # affinity:
-        #   podAntiAffinity:
-        #     requiredDuringSchedulingIgnoredDuringExecution:
-        #     - labelSelector:
-        #         matchExpressions:
-        #         - key: app
-        #           operator: In
-        #           values:
-        #           - darius
-        #       topologyKey: kubernetes.io/hostname
+        affinity:
+          podAntiAffinity:
+            requiredDuringSchedulingIgnoredDuringExecution:
+            - labelSelector:
+                matchExpressions:
+                - key: app
+                  operator: In
+                  values:
+                  - byousefi
+              topologyKey: kubernetes.io/hostname
         volumes:
-        # - name: volume-darius
-        #   persistentVolumeClaim:
-        #     claimName: pvc-darius
         - name: volume-darius
           persistentVolumeClaim:
             claimName: pvc-darius
+        - name: nfs-bonn-epyc
+          nfs:
+            path: /data/project/
+            server: bonn-epyc
+        # - name: nfs-bonn-pe940
+        #   nfs:
+        #     path: /data/projectbig/
+        #     server: bonn-pe940
+        # - name: volume-imsb
+        #   persistentVolumeClaim:
+        #     claimName: pvc-imsb-bonn-dgx-a100
         containers:
         - command:
           - sleep
@@ -49,12 +56,21 @@ spec:
               name: proxy-config
           resources:
             limits:
-              cpu: "20000m"
-              memory: "128Gi"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "16"
+              memory: 128Gi
               nvidia.com/gpu: "1"
           volumeMounts:
-          - name: volume-darius
-            mountPath: "/data/"
+          - mountPath: "/data/"
+            name: volume-darius
+          # - mountPath: /poweredge/
+          #   name: nfs-bonn-pe940
+          - mountPath: /epyc/
+            name: nfs-bonn-epyc
+          # - mountPath: /data
+          #   name: volume-imsb
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
