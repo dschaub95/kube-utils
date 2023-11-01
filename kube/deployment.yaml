@@ -18,23 +18,23 @@ spec:
         labels:
           app: darius
       spec:
-        affinity:
-          podAntiAffinity:
-            requiredDuringSchedulingIgnoredDuringExecution:
-            - labelSelector:
-                matchExpressions:
-                - key: app
-                  operator: In
-                  values:
-                  - byousefi
-              topologyKey: kubernetes.io/hostname
+        # affinity:
+        #   podAntiAffinity:
+        #     requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #         - key: app
+        #           operator: In
+        #           values:
+        #           - darius
+        #       topologyKey: kubernetes.io/hostname
         volumes:
         - name: volume-darius
           persistentVolumeClaim:
             claimName: pvc-darius
         - name: nfs-bonn-epyc
           nfs:
-            path: /data/project/
+            path: /data/
             server: bonn-epyc
         # - name: nfs-bonn-pe940
         #   nfs:
@@ -56,14 +56,14 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 256Gi
+              memory: 128Gi
               # nvidia.com/gpu: "1"
             requests:
               cpu: "16"
-              memory: 256Gi
+              memory: 128Gi
               # nvidia.com/gpu: "1"
           volumeMounts:
-          - mountPath: "/data/"
+          - mountPath: /projects/
             name: volume-darius
           # - mountPath: /poweredge/
           #   name: nfs-bonn-pe940
