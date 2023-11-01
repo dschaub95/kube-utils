@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
     labels:
       app: darius
-    name: deployment-darius
+    name: deployment-darius-latest
     namespace: darius
 spec:
     replicas: 1
@@ -56,18 +56,18 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 128Gi
-              nvidia.com/gpu: "1"
+              memory: 256Gi
+              # nvidia.com/gpu: "1"
             requests:
               cpu: "16"
-              memory: 128Gi
-              nvidia.com/gpu: "1"
+              memory: 256Gi
+              # nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: "/data/"
             name: volume-darius
           # - mountPath: /poweredge/
           #   name: nfs-bonn-pe940
-          - mountPath: /epyc/
+          - mountPath: /data/
             name: nfs-bonn-epyc
           # - mountPath: /data
           #   name: volume-imsb
