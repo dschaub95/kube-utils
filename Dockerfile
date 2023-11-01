@@ -12,11 +12,17 @@ ENV LANG=C.UTF-8
 ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
+ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+
 # System packages 
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y build-essential curl wget nano jq zip git screen\
     && apt-get install -y ffmpeg libsm6 libxext6 \
+    && apt-get install -y gdebi libjpeg-dev zlib1g-dev libpng-dev graphviz graphviz-dev \
+    && apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev \
+    && apt-get install -y libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libffi-dev \
     && apt-get update \
     && apt-get upgrade -y
 
