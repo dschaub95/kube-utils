@@ -19,10 +19,9 @@ ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
 RUN apt-get update \
     && apt-get upgrade -y \
     && apt-get install -y build-essential curl wget nano jq zip git screen\
-    && apt-get install -y ffmpeg libsm6 libxext6 \
-    && apt-get install -y gdebi libjpeg-dev zlib1g-dev libpng-dev graphviz graphviz-dev \
-    && apt-get install -y libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev \
-    && apt-get install -y libharfbuzz-dev libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libffi-dev \
+        ffmpeg libsm6 libxext6 gdebi zlib1g-dev graphviz graphviz-dev \
+        libcurl4-openssl-dev libssl-dev libxml2-dev libfontconfig1-dev libharfbuzz-dev \
+        libfribidi-dev libfreetype6-dev libpng-dev libtiff5-dev libjpeg-dev libffi-dev \
     && apt-get update \
     && apt-get upgrade -y
 
