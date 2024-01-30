@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
     labels:
       app: darius
-    name: deployment-darius-latest
+    name: deployment-darius-new
     namespace: darius
 spec:
     replicas: 1
@@ -36,10 +36,10 @@ spec:
         #   nfs:
         #     path: /data/
         #     server: bonn-epyc
-        - name: nfs-bonn-pe940
-          nfs:
-            path: /data/projectbig/
-            server: bonn-pe940
+        # - name: nfs-bonn-pe940
+        #   nfs:
+        #     path: /data/projectbig/
+        #     server: bonn-pe940
         # - name: volume-imsb
         #   persistentVolumeClaim:
         #     claimName: pvc-imsb-bonn-dgx-a100
@@ -57,17 +57,17 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 158Gi
+              memory: 32Gi
               nvidia.com/gpu: "1"
             requests:
-              cpu: "16"
-              memory: 158Gi
+              cpu: "1"
+              memory: 32Gi
               nvidia.com/gpu: "1"
           volumeMounts:
-          - mountPath: /projects/
+          - mountPath: /data/
             name: volume-darius
-          - mountPath: /poweredge/
-            name: nfs-bonn-pe940
+          # - mountPath: /poweredge/
+          #   name: nfs-bonn-pe940
           # - mountPath: /data/
           #   name: nfs-bonn-epyc
           # - mountPath: /data
@@ -77,8 +77,9 @@ spec:
         preemptionPolicy: PreemptLowerPriority
         priority: 0
         nodeSelector:
-          kubernetes.io/hostname: bonn-dgx-a100
-          # kubernetes.io/hostname: deltabonn-5
+          # kubernetes.io/hostname: bonn-dgx-a100
+          # kubernetes.io/hostname: deltabonn-2
+          kubernetes.io/hostname: deltabonn-h100
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
