@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
     labels:
       app: darius
-    name: deployment-darius-new
+    name: deployment-darius-v1
     namespace: darius
 spec:
     replicas: 1
@@ -32,14 +32,14 @@ spec:
         - name: volume-darius
           persistentVolumeClaim:
             claimName: pvc-darius
-        # - name: nfs-bonn-epyc
-        #   nfs:
-        #     path: /data/
-        #     server: bonn-epyc
-        # - name: nfs-bonn-pe940
-        #   nfs:
-        #     path: /data/projectbig/
-        #     server: bonn-pe940
+        - name: nfs-bonn-epyc
+          nfs:
+            path: /data/
+            server: bonn-epyc
+        - name: nfs-bonn-pe940
+          nfs:
+            path: /data/projectbig/
+            server: bonn-pe940
         # - name: volume-imsb
         #   persistentVolumeClaim:
         #     claimName: pvc-imsb-bonn-dgx-a100
@@ -49,7 +49,8 @@ spec:
           - infinity
           # image: registry.ims.bio/cuda:12.0.1-conda
           # image: registry.ims.bio/cuda:latest-v3
-          image: human0815/cuda-12.0.1-conda:latest
+          # image: human0815/cuda-12.0.1-conda:latest
+          image: human0815/cuda-conda:12.2.2-cudnn8-runtime-ubuntu20.04
           imagePullPolicy: IfNotPresent
           name: darius
           envFrom:
@@ -58,19 +59,19 @@ spec:
           resources:
             limits:
               memory: 32Gi
-              nvidia.com/gpu: "1"
+              nvidia.com/gpu: "0"
             requests:
               cpu: "1"
               memory: 32Gi
-              nvidia.com/gpu: "1"
+              nvidia.com/gpu: "0"
           volumeMounts:
           - mountPath: /data/
             name: volume-darius
-          # - mountPath: /poweredge/
-          #   name: nfs-bonn-pe940
-          # - mountPath: /data/
-          #   name: nfs-bonn-epyc
-          # - mountPath: /data
+          - mountPath: /poweredge/
+            name: nfs-bonn-pe940
+          - mountPath: /epyc/
+            name: nfs-bonn-epyc
+          # - mountPath: /
           #   name: volume-imsb
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
