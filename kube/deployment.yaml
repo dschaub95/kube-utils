@@ -59,11 +59,11 @@ spec:
           resources:
             limits:
               memory: 32Gi
-              nvidia.com/gpu: "0"
+              nvidia.com/gpu: "1"
             requests:
-              cpu: "1"
+              cpu: "4"
               memory: 32Gi
-              nvidia.com/gpu: "0"
+              nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: /data/
             name: volume-darius
