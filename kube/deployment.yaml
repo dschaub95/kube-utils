@@ -58,11 +58,11 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 32Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
             requests:
               cpu: "4"
-              memory: 32Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: /data/
