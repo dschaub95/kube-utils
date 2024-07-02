@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+    labels:
+      app: darius
+    name: deployment-darius-big
+    namespace: darius
+spec:
+    replicas: 1
+    selector:
+      matchLabels:
+        app: darius
+    strategy:
+      type: Recreate
+    template:
+      metadata:
+        # creationTimestamp: null
+        labels:
+          app: darius
+      spec:
+        # affinity:
+        #   podAntiAffinity:
+        #     requiredDuringSchedulingIgnoredDuringExecution:
+        #     - labelSelector:
+        #         matchExpressions:
+        #         - key: app
+        #           operator: In
+        #           values:
+        #           - darius
+        #       topologyKey: kubernetes.io/hostname
+        volumes:
+        - name: volume-darius
+          persistentVolumeClaim:
+            claimName: pvc-darius
+        - name: nfs-bonn-epyc
+          nfs:
+            path: /data/
+            server: bonn-epyc
+        - name: nfs-bonn-pe940
+          nfs:
+            path: /data/
+            server: bonn-pe940
+        # - name: volume-imsb
+        #   persistentVolumeClaim:
+        #     claimName: pvc-imsb-bonn-dgx-a100
+        containers:
+        - command:
+          - sleep
+          - infinity
+          image: human0815/cuda-conda:12.2.2-cudnn8-runtime-ubuntu20.04
+          imagePullPolicy: IfNotPresent
+          name: darius
+          envFrom:
+          - configMapRef:
+              name: proxy-config
+          resources:
+            limits:
+              memory: 256Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "8"
+              memory: 256Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+          - mountPath: /data/
+            name: volume-darius
+          - mountPath: /poweredge/
+            name: nfs-bonn-pe940
+          - mountPath: /epyc/
+            name: nfs-bonn-epyc
+          # - mountPath: /
+          #   name: volume-imsb
+        dnsPolicy: ClusterFirst
+        enableServiceLinks: true
+        preemptionPolicy: PreemptLowerPriority
+        priority: 0
+        nodeSelector:
+          kubernetes.io/hostname: bonn-dgx-a100
+          # kubernetes.io/hostname: deltabonn-2
+          # kubernetes.io/hostname: deltabonn-h100
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
+        
