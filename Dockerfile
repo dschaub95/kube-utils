@@ -5,6 +5,7 @@ ARG OS_TYPE=x86_64
 # FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
 # FROM nvidia/cuda:12.0.1-cudnn8-runtime-ubuntu20.04
 FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu20.04
+# FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu20.04
 
 ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -14,8 +15,8 @@ ENV TZ=Europe/Berlin
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # only necessary if building behind a proxy
-# ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-# ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
 
 # System packages 
 RUN apt-get update
@@ -63,6 +64,5 @@ ENV PATH=/miniconda/bin:${PATH}
 RUN conda update -y conda
 RUN conda init
 
-# set env variables to work on server
-ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+RUN conda install -n base conda-libmamba-solver
+RUN conda config --set solver libmamba
