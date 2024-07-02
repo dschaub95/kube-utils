@@ -3,7 +3,7 @@ kind: Deployment
 metadata:
     labels:
       app: darius
-    name: deployment-darius-v1
+    name: deployment-darius-a100
     namespace: darius
 spec:
     replicas: 1
@@ -78,9 +78,9 @@ spec:
         preemptionPolicy: PreemptLowerPriority
         priority: 0
         nodeSelector:
-          # kubernetes.io/hostname: bonn-dgx-a100
+          kubernetes.io/hostname: bonn-dgx-a100
           # kubernetes.io/hostname: deltabonn-2
-          kubernetes.io/hostname: deltabonn-h100
+          # kubernetes.io/hostname: deltabonn-h100
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
