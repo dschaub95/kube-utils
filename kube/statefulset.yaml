@@ -1,17 +1,17 @@
 apiVersion: apps/v1
-kind: Deployment
+kind: StatefulSet
 metadata:
     labels:
       app: darius
-    name: deployment-darius-a100-latest
+    name: statefulset-darius-a100
     namespace: darius
 spec:
     replicas: 1
     selector:
       matchLabels:
         app: darius
-    strategy:
-      type: Recreate
+    # strategy:
+    #   type: Recreate
     template:
       metadata:
         # creationTimestamp: null
@@ -65,11 +65,11 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 256Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
             requests:
               cpu: "8"
-              memory: 256Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: /data/
@@ -94,4 +94,4 @@ spec:
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
-        terminationGracePeriodSeconds: 30        
+        terminationGracePeriodSeconds: 30         
