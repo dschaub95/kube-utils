@@ -1,0 +1,10 @@
+# # Allow Dockerfiles anywhere inside the docker folder
+# !docker/**/Dockerfile
+
+# # Allow .sh files anywhere inside the docker folder
+# !docker/**/*.sh
+
+# # Ignore everything in the docker folder
+# docker/**
+
+docker/valis/**
