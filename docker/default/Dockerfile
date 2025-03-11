@@ -1,5 +1,6 @@
 ARG CONDA_VER=latest
 ARG OS_TYPE=x86_64
+ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
 
 # FROM nvidia/cuda:11.4.1-cudnn8-runtime-ubuntu20.04
 # FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04

@@ -6,7 +6,7 @@ metadata:
     name: deployment-darius-dti
     namespace: darius
 spec:
-    replicas: 4
+    replicas: 1
     selector:
       matchLabels:
         app: darius
@@ -55,12 +55,12 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 80Gi
-              nvidia.com/gpu: "1"
+              memory: 320Gi
+              nvidia.com/gpu: "4"
             requests:
-              cpu: "4"
-              memory: 80Gi
-              nvidia.com/gpu: "1"
+              cpu: "16"
+              memory: 320Gi
+              nvidia.com/gpu: "4"
           volumeMounts:
           - mountPath: /data/
             name: volume-darius
