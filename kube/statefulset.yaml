@@ -55,11 +55,11 @@ spec:
               name: proxy-config
           resources:
             limits:
-              memory: 128Gi
+              memory: 80Gi
               nvidia.com/gpu: "1"
             requests:
               cpu: "8"
-              memory: 128Gi
+              memory: 80Gi
               nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: /data/
@@ -77,8 +77,8 @@ spec:
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
         priority: 0
-        nodeSelector:
-          kubernetes.io/hostname: bonn-dgx-a100
+        # nodeSelector:
+          # kubernetes.io/hostname: bonn-dgx-a100
           # kubernetes.io/hostname: deltabonn-2
           # kubernetes.io/hostname: deltabonn-h100
         restartPolicy: Always
