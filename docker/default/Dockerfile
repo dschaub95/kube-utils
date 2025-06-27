@@ -122,7 +122,10 @@ RUN conda config --add envs_dirs /epyc/projects/dschaub/miniconda/envs
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # install arial
-RUN sudo apt install -y ttf-mscorefonts-installer
-RUN sudo fc-cache -f -v
+RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
+    | sudo debconf-set-selections \
+    && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends \
+    ttf-mscorefonts-installer \
+    && sudo fc-cache -f -v
 
 CMD ["/bin/bash"]
