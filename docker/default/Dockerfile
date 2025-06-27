@@ -8,7 +8,8 @@ ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
 # FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu20.04
 # FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu20.04
 # FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu20.04
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu20.04
+# FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu20.04
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
