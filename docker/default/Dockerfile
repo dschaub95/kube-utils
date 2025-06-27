@@ -119,4 +119,9 @@ RUN conda config --add envs_dirs /epyc/projects/dschaub/miniconda/envs
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
+# install arial
+RUN apt update
+RUN apt install -y ttf-mscorefonts-installer
+RUN fc-cache -f -v
+
 CMD ["/bin/bash"]
