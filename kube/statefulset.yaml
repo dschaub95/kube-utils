@@ -47,7 +47,7 @@ spec:
           command:
           - sleep
           - infinity
-          image: human0815/cuda-conda:12.2.2-cudnn8-runtime-ubuntu20.04-updated
+          image: human0815/cuda-conda:12.8.1
           imagePullPolicy: Always
           name: darius
           envFrom:
