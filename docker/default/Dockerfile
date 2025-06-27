@@ -107,6 +107,9 @@ RUN pipx ensurepath --global
 RUN pipx install --global poetry
 # RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/home/$USERNAME/.local python3 -
 
+RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
+    > /etc/sudoers.d/proxy && chmod 0440 /etc/sudoers.d/proxy
+
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
 RUN conda init
