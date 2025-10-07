@@ -3,10 +3,9 @@ kind: StatefulSet
 metadata:
     labels:
       app: darius
-    name: statefulset-darius-a100
+    name: statefulset-darius
     namespace: darius
 spec:
-    serviceName: darius
     replicas: 1
     selector:
       matchLabels:
@@ -23,17 +22,17 @@ spec:
         - name: volume-darius
           persistentVolumeClaim:
             claimName: pvc-darius
-        - name: nfs-bonn-epyc
-          nfs:
-            path: /data/
-            server: bonn-epyc
-        - name: nfs-bonn-pe940
-          nfs:
-            path: /data/
-            server: bonn-pe940
-        - name: apt-config
-          configMap:
-            name: apt-config
+        # - name: nfs-bonn-epyc
+        #   nfs:
+        #     path: /data/
+        #     server: bonn-epyc
+        # - name: nfs-bonn-pe940
+        #   nfs:
+        #     path: /data/
+        #     server: bonn-pe940
+        # - name: apt-config
+        #   configMap:
+        #     name: apt-config
         # - name: volume-imsb
         #   persistentVolumeClaim:
         #     claimName: pvc-imsb-bonn-dgx-a100
@@ -43,35 +42,35 @@ spec:
             # capabilities:
             #   drop:
             #   - ALL
-            runAsNonRoot: true
-            runAsUser: 2856
+            # runAsNonRoot: true
+            # runAsUser: 2856
           command:
           - sleep
           - infinity
           image: human0815/cuda-conda:12.8.1-v2
           imagePullPolicy: Always
           name: darius
-          envFrom:
-          - configMapRef:
-              name: proxy-config
+          # envFrom:
+          # - configMapRef:
+          #     name: proxy-config
           resources:
             limits:
-              memory: 150Gi
+              memory: 200Gi
               nvidia.com/gpu: "1"
             requests:
               cpu: "8"
-              memory: 150Gi
+              memory: 200Gi
               nvidia.com/gpu: "1"
           volumeMounts:
-          - mountPath: /data/
+          - mountPath: /epyc/projects/dschaub/
             name: volume-darius
-          - mountPath: /poweredge/
-            name: nfs-bonn-pe940
-          - mountPath: /epyc/
-            name: nfs-bonn-epyc
-          - mountPath: /etc/apt/apt.conf
-            name: apt-config
-            subPath: apt.conf
+          # - mountPath: /poweredge/
+          #   name: nfs-bonn-pe940
+          # - mountPath: /epyc/
+          #   name: nfs-bonn-epyc
+          # - mountPath: /etc/apt/apt.conf
+          #   name: apt-config
+          #   subPath: apt.conf
           # - mountPath: /
           #   name: volume-imsb
         dnsPolicy: ClusterFirst

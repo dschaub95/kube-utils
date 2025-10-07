@@ -1,15 +1,9 @@
+# FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu20.04
+FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+
 ARG CONDA_VER=latest
 ARG OS_TYPE=x86_64
 ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
-
-# FROM nvidia/cuda:11.4.1-cudnn8-runtime-ubuntu20.04
-# FROM nvidia/cuda:11.2.2-cudnn8-runtime-ubuntu20.04
-# FROM nvidia/cuda:12.0.1-cudnn8-runtime-ubuntu20.04
-# FROM nvidia/cuda:12.2.2-cudnn8-runtime-ubuntu20.04
-# FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu20.04
-# FROM nvidia/cuda:12.6.3-cudnn-runtime-ubuntu20.04
-# FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu20.04
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -91,12 +85,14 @@ RUN curl -LO "http://repo.continuum.io/miniconda/Miniconda3-${CONDA_VER}-Linux-$
 RUN bash Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh -p /miniconda -b
 RUN rm Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh
 ENV PATH=/miniconda/bin:${PATH}
-RUN conda update -y conda
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
+    conda update -y conda
 RUN conda init
 
 RUN conda install -n base conda-libmamba-solver
 RUN conda config --set solver libmamba
-RUN conda config --add envs_dirs /epyc/projects/dschaub/miniconda/envs
+RUN conda config --add envs_dirs "${CONDA_PATH}"
 
 # install cookiecutter template packages
 RUN pip install cruft pre-commit
@@ -113,9 +109,11 @@ RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
 
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN conda init
 RUN conda config --set solver libmamba
-RUN conda config --add envs_dirs /epyc/projects/dschaub/miniconda/envs
+RUN conda config --add envs_dirs "${CONDA_PATH}"
 # ENV PATH="/home/$USERNAME/.local/bin:${PATH}"
 # RUN poetry --version
 
