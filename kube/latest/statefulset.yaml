@@ -19,17 +19,21 @@ spec:
           app: darius
       spec:
         volumes:
-        - name: volume-darius
-          persistentVolumeClaim:
-            claimName: pvc-darius
+        # - name: volume-darius
+        #   persistentVolumeClaim:
+        #     claimName: pvc-darius
         # - name: nfs-bonn-epyc
         #   nfs:
         #     path: /data/
         #     server: bonn-epyc
-        # - name: nfs-bonn-pe940
-        #   nfs:
-        #     path: /data/
-        #     server: bonn-pe940
+        - name: nfs-bonn-pe940
+          nfs:
+            path: /data/
+            server: bonn-pe940
+        - name: nfs-bonn-pe940-dschaub
+          nfs:
+            path: /data/project/dschaub
+            server: bonn-pe940
         # - name: apt-config
         #   configMap:
         #     name: apt-config
@@ -62,10 +66,12 @@ spec:
               memory: 200Gi
               nvidia.com/gpu: "1"
           volumeMounts:
+          # - mountPath: /epyc/projects/dschaub/
+          #   name: volume-darius
+          - mountPath: /poweredge/
+            name: nfs-bonn-pe940
           - mountPath: /epyc/projects/dschaub/
-            name: volume-darius
-          # - mountPath: /poweredge/
-          #   name: nfs-bonn-pe940
+            name: nfs-bonn-pe940-dschaub
           # - mountPath: /epyc/
           #   name: nfs-bonn-epyc
           # - mountPath: /etc/apt/apt.conf
