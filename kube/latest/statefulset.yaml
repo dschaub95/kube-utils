@@ -51,7 +51,7 @@ spec:
           command:
           - sleep
           - infinity
-          image: human0815/cuda-conda:12.8.1-v2
+          image: human0815/cuda-conda:12.8.1-v3
           imagePullPolicy: Always
           name: darius
           # envFrom:
