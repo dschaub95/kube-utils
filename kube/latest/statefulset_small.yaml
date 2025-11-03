@@ -33,11 +33,11 @@ spec:
           name: darius
           resources:
             limits:
-              memory: 256Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
             requests:
               cpu: "8"
-              memory: 256Gi
+              memory: 128Gi
               nvidia.com/gpu: "1"
           volumeMounts:
           - mountPath: /poweredge
