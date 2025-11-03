@@ -1,0 +1,90 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    labels:
+      app: darius
+    name: statefulset-darius-small
+    namespace: darius
+spec:
+    serviceName: darius
+    replicas: 1
+    selector:
+      matchLabels:
+        app: darius
+    # strategy:
+    #   type: Recreate
+    template:
+      metadata:
+        # creationTimestamp: null
+        labels:
+          app: darius
+      spec:
+        volumes:
+        # - name: volume-darius
+        #   persistentVolumeClaim:
+        #     claimName: pvc-darius
+        # - name: nfs-bonn-epyc
+        #   nfs:
+        #     path: /data/
+        #     server: bonn-epyc
+        - name: nfs-bonn-pe940
+          nfs:
+            path: /data/
+            server: bonn-pe940
+        - name: nfs-bonn-pe940-dschaub
+          nfs:
+            path: /data/project/dschaub
+            server: bonn-pe940
+        # - name: apt-config
+        #   configMap:
+        #     name: apt-config
+        # - name: volume-imsb
+        #   persistentVolumeClaim:
+        #     claimName: pvc-imsb-bonn-dgx-a100
+        containers:
+        - securityContext: {}
+          command:
+          - sleep
+          - infinity
+          image: human0815/cuda-conda:12.8.1-v3
+          imagePullPolicy: Always
+          name: darius
+          # envFrom:
+          # - configMapRef:
+          #     name: proxy-config
+          resources:
+            limits:
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "8"
+              memory: 128Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+          # - mountPath: /epyc/projects/dschaub/
+          #   name: volume-darius
+          - mountPath: /poweredge/
+            name: nfs-bonn-pe940
+          - mountPath: /epyc/projects/dschaub/
+            name: nfs-bonn-pe940-dschaub
+          # - mountPath: /epyc/
+          #   name: nfs-bonn-epyc
+          # - mountPath: /etc/apt/apt.conf
+          #   name: apt-config
+          #   subPath: apt.conf
+          # - mountPath: /
+          #   name: volume-imsb
+        dnsPolicy: ClusterFirst
+        enableServiceLinks: true
+        preemptionPolicy: PreemptLowerPriority
+        priority: 0
+        nodeSelector: {}
+          # kubernetes.io/hostname: bonncuda
+          # kubernetes.io/hostname: bonn-dgx-a100
+          # kubernetes.io/hostname: deltabonn-2
+          # kubernetes.io/hostname: deltabonn-h100
+
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30         
