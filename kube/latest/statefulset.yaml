@@ -43,12 +43,15 @@ spec:
           - mountPath: /poweredge
             name: volume-poweredge
             subPath: .
-          - mountPath: /epyc/projects/dschaub
-            name: volume-poweredge
-            subPath: project/dschaub
+          # - mountPath: /epyc/projects/dschaub
+          #   name: volume-poweredge
+          #   subPath: project/dschaub
           - mountPath: /deltabonn-6
             name: volume-deltabonn-6
             subPath: .
+          - mountPath: /epyc/projects/dschaub
+            name: volume-deltabonn-6
+            subPath: dschaub
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
