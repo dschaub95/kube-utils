@@ -78,7 +78,9 @@ RUN git config --global user.email "schaub.darius@gmail.com"
 # Use the above args 
 ARG CONDA_VER
 ARG OS_TYPE
+
 # Install miniconda to /miniconda
+ENV PATH=/miniconda/bin:${PATH}
 RUN curl -LO "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh" && \
     bash Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh -p /miniconda -b && \
     rm Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh && \
@@ -88,8 +90,6 @@ RUN curl -LO "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VER}-Linux-
     conda install -n base conda-libmamba-solver && \
     conda config --set solver libmamba && \
     conda config --add envs_dirs "${CONDA_PATH}"
-
-ENV PATH=/miniconda/bin:${PATH}
 
 # install cookiecutter template packages
 RUN pip install cruft pre-commit
