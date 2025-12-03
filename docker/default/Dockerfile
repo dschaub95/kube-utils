@@ -61,6 +61,8 @@ RUN apt-get update && \
     libtiff5-dev \
     libjpeg-dev \
     libffi-dev \
+    libopenblas-dev \
+    cmake \
     software-properties-common && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
