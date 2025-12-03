@@ -28,7 +28,7 @@ spec:
           command:
           - sleep
           - infinity
-          image: human0815/cuda-conda:12.8.1-v3
+          image: human0815/cuda-conda:12.8.1-v4
           imagePullPolicy: Always
           name: darius
           resources:
@@ -43,9 +43,6 @@ spec:
           - mountPath: /poweredge
             name: volume-poweredge
             subPath: .
-          # - mountPath: /epyc/projects/dschaub
-          #   name: volume-poweredge
-          #   subPath: project/dschaub
           - mountPath: /deltabonn-6
             name: volume-deltabonn-6
             subPath: .
