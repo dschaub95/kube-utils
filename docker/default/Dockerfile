@@ -127,8 +127,8 @@ WORKDIR /home/$USERNAME
 # Create uv directories during build
 RUN mkdir -p "$HOME/.uv-local/cache" "$HOME/.uv-local/python" "$HOME/.uv-local/python-cache" "$HOME/.uv-local/venvs"
 
-RUN cat << 'EOF' >> /home/$USERNAME/.bashrc
-
+RUN <<'EOF'
+cat <<'BASHRC' >> "/home/$USERNAME/.bashrc"
 # ---- uv base dirs on local FS (inside container) ----
 export UV_BASE="$HOME/.uv-local"
 
@@ -168,7 +168,7 @@ case "$PROMPT_COMMAND" in
     PROMPT_COMMAND="_uv_auto_env${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
     ;;
 esac
-
+BASHRC
 EOF
 
 CMD ["/bin/bash"]
