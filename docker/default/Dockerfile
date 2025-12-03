@@ -1,27 +1,26 @@
-# FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu20.04
 FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
 
 ARG CONDA_VER=latest
 ARG OS_TYPE=x86_64
 ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
-
-ENV LANGUAGE=C.UTF-8
-ENV LC_ALL=C.UTF-8
-ENV LANG=C.UTF-8
-
-ENV TZ=Europe/Berlin
-RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
-
-# only necessary if building behind a proxy
-ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-
-
 # Create a non-root user
 ARG USERNAME=dschaub
 ARG USER_UID=2856
 ## we are using 1735 as our shared group instbonn
 ARG USER_GID=1735
+
+# Set environment variables
+ENV LANGUAGE=C.UTF-8
+ENV LC_ALL=C.UTF-8
+ENV LANG=C.UTF-8
+# only necessary if building behind a proxy
+ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV TZ=Europe/Berlin
+
+
+# Set the timezone
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -33,9 +32,9 @@ RUN apt-get update && apt-get install -y sudo \
     && chmod 0440 /etc/sudoers.d/${USERNAME}
 
 # System packages 
-RUN apt-get update
-RUN apt-get upgrade -y
-RUN apt-get install -y \
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get install -y \
     build-essential \
     curl \
     wget \
@@ -63,16 +62,15 @@ RUN apt-get install -y \
     libjpeg-dev \
     libffi-dev \
     software-properties-common && \
-    apt-get clean && rm -rf /var/lib/apt/lists/*
-RUN apt-get update -y
-RUN apt-get upgrade -y
+    apt-get clean && \
+    rm -rf /var/lib/apt/lists/*
 
 # install the latest git version
-RUN apt-get remove --purge git -y
-RUN apt-get autoremove -y
-RUN add-apt-repository ppa:git-core/ppa
-RUN apt update -y
-RUN apt install -y git
+RUN apt-get remove --purge git -y && \
+    apt-get autoremove -y && \
+    add-apt-repository ppa:git-core/ppa && \
+    apt-get update -y && \
+    apt-get install -y git
 
 RUN git config --global user.name "dschaub95"
 RUN git config --global user.email "schaub.darius@gmail.com"
@@ -81,41 +79,36 @@ RUN git config --global user.email "schaub.darius@gmail.com"
 ARG CONDA_VER
 ARG OS_TYPE
 # Install miniconda to /miniconda
-RUN curl -LO "http://repo.continuum.io/miniconda/Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh"
-RUN bash Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh -p /miniconda -b
-RUN rm Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh
-ENV PATH=/miniconda/bin:${PATH}
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r && \
-    conda update -y conda
-RUN conda init
+RUN curl -LO "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh" && \
+    bash Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh -p /miniconda -b && \
+    rm Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh && \
+    conda tos accept && \
+    conda update -y conda && \
+    conda init && \
+    conda install -n base conda-libmamba-solver && \
+    conda config --set solver libmamba && \
+    conda config --add envs_dirs "${CONDA_PATH}"
 
-RUN conda install -n base conda-libmamba-solver
-RUN conda config --set solver libmamba
-RUN conda config --add envs_dirs "${CONDA_PATH}"
+ENV PATH=/miniconda/bin:${PATH}
 
 # install cookiecutter template packages
 RUN pip install cruft pre-commit
 
 # install poetry
-RUN python3 -m pip install pipx
-RUN python3 -m pipx ensurepath
-RUN pipx ensurepath --global
-RUN pipx install --global poetry
-# RUN curl -sSL https://install.python-poetry.org | POETRY_HOME=/home/$USERNAME/.local python3 -
+RUN python3 -m pip install pipx && \
+    python3 -m pipx ensurepath && \
+    pipx ensurepath --global && \
+    pipx install --global poetry
 
 RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
     > /etc/sudoers.d/proxy && chmod 0440 /etc/sudoers.d/proxy
 
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
-RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main && \
-    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
-RUN conda init
-RUN conda config --set solver libmamba
-RUN conda config --add envs_dirs "${CONDA_PATH}"
-# ENV PATH="/home/$USERNAME/.local/bin:${PATH}"
-# RUN poetry --version
+RUN conda tos accept && \
+    conda init && \
+    conda config --set solver libmamba && \
+    conda config --add envs_dirs "${CONDA_PATH}"
 
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -126,5 +119,56 @@ RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula sele
     && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends \
     ttf-mscorefonts-installer \
     && sudo fc-cache -f -v
+
+# configure uv to create venvs locally
+USER $USERNAME
+WORKDIR /home/$USERNAME
+
+# Create uv directories during build
+RUN mkdir -p "$HOME/.uv-local/cache" "$HOME/.uv-local/python" "$HOME/.uv-local/python-cache" "$HOME/.uv-local/venvs"
+
+RUN cat << 'EOF' >> /home/$USERNAME/.bashrc
+
+# ---- uv base dirs on local FS (inside container) ----
+export UV_BASE="$HOME/.uv-local"
+
+export UV_CACHE_DIR="$UV_BASE/cache"
+export UV_PYTHON_INSTALL_DIR="$UV_BASE/python"
+export UV_PYTHON_CACHE_DIR="$UV_BASE/python-cache"
+
+# Find project root by walking up until we see a marker file
+_uv_find_project_root() {
+    local dir="$PWD"
+    while [ "$dir" != "/" ]; do
+        if [ -f "$dir/pyproject.toml" ] || [ -f "$dir/uv.lock" ]; then
+            echo "$dir"
+            return 0
+        fi
+        dir="$(dirname "$dir")"
+    done
+    return 1
+}
+
+# Automatically set UV_PROJECT_ENVIRONMENT per project
+_uv_auto_env() {
+    local root
+    root="$(_uv_find_project_root)" || { unset UV_PROJECT_ENVIRONMENT; return; }
+
+    # Use project directory name for env name
+    local project_name
+    project_name="$(basename "$root")"
+
+    export UV_PROJECT_ENVIRONMENT="$UV_BASE/venvs/$project_name"
+}
+
+# Hook into the prompt so it updates after every cd
+case "$PROMPT_COMMAND" in
+    *"_uv_auto_env"*) : ;;  # already hooked
+    *)
+    PROMPT_COMMAND="_uv_auto_env${PROMPT_COMMAND:+;$PROMPT_COMMAND}"
+    ;;
+esac
+
+EOF
 
 CMD ["/bin/bash"]
