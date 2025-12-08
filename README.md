@@ -6,8 +6,8 @@ Some utility files to develop on a kubernetes cluster.
 
 ```bash
 docker login
-docker build -t human0815/repo-name:latest .
-docker push human0815/repo-name:latest
+docker build -t human0815/cuda-conda:12.8.1-v4 docker/default
+docker push human0815/cuda-conda:12.8.1-v4
 ```
 
 If necessary you can tag your image using this command:
@@ -17,6 +17,12 @@ docker rmi human0815/repo-name:latest
 ```
 
 ## Usage
+
+To create a statefulset run (you might need to adapt the mount paths in the file):
+```bash
+kubectl apply -f ./kube/latest/statefulset.yaml
+```
+
 To setup a persistent volume claim for the current user, run:
 ```bash
 kubectl apply -f ./kube/pvc.yaml
