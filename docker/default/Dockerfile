@@ -8,6 +8,8 @@ ARG USERNAME=dschaub
 ARG USER_UID=2856
 ## we are using 1735 as our shared group instbonn
 ARG USER_GID=1735
+ARG GITHUB_NAME=dschaub95
+ARG GITHUB_EMAIL=schaub.darius@gmail.com
 
 # Set environment variables
 ENV LANGUAGE=C.UTF-8
@@ -74,12 +76,8 @@ RUN apt-get remove --purge git -y && \
     apt-get update -y && \
     apt-get install -y git
 
-RUN git config --global user.name "dschaub95"
-RUN git config --global user.email "schaub.darius@gmail.com"
-
-# Use the above args 
-ARG CONDA_VER
-ARG OS_TYPE
+RUN git config --global user.name $GITHUB_NAME
+RUN git config --global user.email $GITHUB_EMAIL
 
 # Install miniconda to /miniconda
 ENV PATH=/miniconda/bin:${PATH}
