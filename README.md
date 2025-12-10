@@ -4,10 +4,17 @@ Some utility files to develop on a kubernetes cluster.
 
 ## Prepare Docker image and push to Dockerhub
 
+Change the username, repo and tag:
+
 ```bash
 docker login
 docker build -t human0815/cuda-conda:12.8.1-v4 docker/default
 docker push human0815/cuda-conda:12.8.1-v4
+```
+
+with build args run this with suitable customizations (not all shown, see Dockerfile):
+```bash
+docker build -t human0815/cuda-conda:12.8.1-v4 --build-arg http_proxy=http://proxy1.zmnh.uni-hamburg.de:8888 --build-arg https_proxy=http://proxy1.zmnh.uni-hamburg.de:8888 --build-arg CONDA_PATH=/path/to/desired/conda/env/location
 ```
 
 If necessary you can tag your image using this command:
