@@ -15,14 +15,24 @@ ARG GITHUB_EMAIL=schaub.darius@gmail.com
 ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
 ENV LANG=C.UTF-8
-# only necessary if building behind a proxy
-ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+# Allow overriding proxy at build time but default to none to avoid
+# inheriting host proxies that break apt inside the image.
+ARG http_proxy
+ARG https_proxy
+ENV http_proxy="${http_proxy:-}" \
+    https_proxy="${https_proxy:-}" \
+    no_proxy="localhost,127.0.0.1"
 ENV TZ=Europe/Berlin
 
 
 # Set the timezone
 RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# If no proxy is supplied, ensure no stale proxy config remains.
+RUN if [ -z "$http_proxy$https_proxy" ]; then \
+      rm -f /etc/apt/apt.conf.d/*proxy /etc/apt/apt.conf; \
+    fi
+
 
 # Create the user
 RUN groupadd --gid $USER_GID $USERNAME \
@@ -170,5 +180,9 @@ case "$PROMPT_COMMAND" in
 esac
 BASHRC
 EOF
+
+# these are necessary when deploying to the kubernetes cluster
+ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
 
 CMD ["/bin/bash"]
