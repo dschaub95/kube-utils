@@ -4,7 +4,7 @@ Some utility files to develop on a kubernetes cluster.
 
 ## Prepare Docker image and push to Dockerhub
 
-Change the username, repo and tag:
+Here we only build using the `docker/default/Dockerfile` (suitable for Kubernetes cluster). Change the username, repo and tag:
 
 ```bash
 docker login
@@ -25,7 +25,7 @@ docker rmi human0815/repo-name:latest
 
 ## Usage
 
-To create a statefulset run (you might need to adapt the mount paths in the file):
+To create a statefulset run (you need to adapt the mount paths in the file, according to your username etc):
 ```bash
 kubectl apply -f ./kube/latest/statefulset.yaml
 ```
