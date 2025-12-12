@@ -23,12 +23,15 @@ spec:
         - name: volume-deltabonn-6
           persistentVolumeClaim:
             claimName: pvc-deltabonn-6
+        - name: volume-epyc
+          persistentVolumeClaim:
+            claimName: pvc-imsb-bonn-epyc
         containers:
         - securityContext: {}
           command:
           - sleep
           - infinity
-          image: human0815/cuda-conda:12.8.1-v3
+          image: human0815/cuda-conda:12.8.1-v5
           imagePullPolicy: Always
           name: darius
           resources:
@@ -43,15 +46,14 @@ spec:
           - mountPath: /poweredge
             name: volume-poweredge
             subPath: .
-          # - mountPath: /epyc/projects/dschaub
-          #   name: volume-poweredge
-          #   subPath: project/dschaub
           - mountPath: /deltabonn-6
             name: volume-deltabonn-6
             subPath: .
           - mountPath: /epyc/projects/dschaub
             name: volume-deltabonn-6
             subPath: dschaub
+          - mountPath: /bonn-epyc
+            name: volume-epyc
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
