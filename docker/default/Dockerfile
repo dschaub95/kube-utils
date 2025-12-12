@@ -30,7 +30,7 @@ RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
 # If no proxy is supplied, ensure no stale proxy config remains.
 RUN if [ -z "$http_proxy$https_proxy" ]; then \
-      rm -f /etc/apt/apt.conf.d/*proxy /etc/apt/apt.conf; \
+    rm -f /etc/apt/apt.conf.d/*proxy /etc/apt/apt.conf; \
     fi
 
 
@@ -115,6 +115,8 @@ RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
 
 # [Optional] Set the default user. Omit if you want to keep the default as root.
 USER $USERNAME
+RUN git config --global user.name $GITHUB_NAME && \
+    git config --global user.email $GITHUB_EMAIL
 RUN conda tos accept && \
     conda init && \
     conda config --set solver libmamba && \
