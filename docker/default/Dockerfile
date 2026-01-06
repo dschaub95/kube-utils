@@ -1,4 +1,5 @@
-FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+# FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
+FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 
 ARG CONDA_VER=latest
 ARG OS_TYPE=x86_64
@@ -75,17 +76,22 @@ RUN apt-get update && \
     libffi-dev \
     libopenblas-dev \
     cmake \
-    software-properties-common && \
-    apt-get clean && \
+    software-properties-common
+
+# install arial
+RUN sudo add-apt-repository multiverse \
+    && sudo apt-get update \
+    && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
+    | sudo debconf-set-selections \
+    && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends \
+    ttf-mscorefonts-installer \
+    && sudo fc-cache -f -v
+
+# clean up
+RUN apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 
-# install the latest git version
-RUN apt-get remove --purge git -y && \
-    apt-get autoremove -y && \
-    add-apt-repository ppa:git-core/ppa && \
-    apt-get update -y && \
-    apt-get install -y git
-
+# set git config
 RUN git config --global user.name $GITHUB_NAME
 RUN git config --global user.email $GITHUB_EMAIL
 
@@ -124,13 +130,6 @@ RUN conda tos accept && \
 
 # install uv
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# install arial
-RUN echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
-    | sudo debconf-set-selections \
-    && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends \
-    ttf-mscorefonts-installer \
-    && sudo fc-cache -f -v
 
 # configure uv to create venvs locally
 USER $USERNAME
