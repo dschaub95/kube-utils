@@ -26,6 +26,10 @@ spec:
         - name: volume-epyc
           persistentVolumeClaim:
             claimName: pvc-imsb-bonn-epyc
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
         containers:
         - securityContext: {}
           command:
@@ -54,6 +58,8 @@ spec:
             subPath: dschaub
           - mountPath: /bonn-epyc
             name: volume-epyc
+          - mountPath: /dev/shm
+            name: dshm
         dnsPolicy: ClusterFirst
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
