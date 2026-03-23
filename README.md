@@ -25,6 +25,10 @@ docker tag human0815/repo-name:latest human0815/repo-name:new
 docker rmi human0815/repo-name:latest
 ```
 
+## Build and push via GitHub Actions
+
+The workflow [`.github/workflows/docker.yml`](.github/workflows/docker.yml) builds `docker/default` and pushes `human0815/cuda-conda:latest` to Docker Hub. It is triggered manually: open the repository on GitHub, go to **Actions**, select the **docker** workflow, then **Run workflow**. Configure a repository secret **`DOCKERHUB_TOKEN`** (Docker Hub access token) under **Settings → Secrets and variables → Actions**.
+
 ## Create Statefulset in Kubernetes
 
 To create a statefulset run (you need to adapt the mount paths in the file, according to your username etc.):
