@@ -192,7 +192,7 @@ BASHRC
 EOF
 
 # these are necessary when deploying to the kubernetes cluster
-ENV http_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
-ENV https_proxy="http://proxy1.zmnh.uni-hamburg.de:8888"
+ENV http_proxy="http://proxy.ims.bio:3128"
+ENV https_proxy="http://proxy.ims.bio:3128"
 
 CMD ["/bin/bash"]
