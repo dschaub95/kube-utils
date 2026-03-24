@@ -1,5 +1,5 @@
 # FROM nvidia/cuda:12.8.1-cudnn-runtime-ubuntu24.04
-FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
+FROM nvidia/cuda:13.2.0-cudnn-devel-ubuntu24.04
 
 ARG CONDA_VER=latest
 ARG OS_TYPE=x86_64
@@ -76,7 +76,8 @@ RUN apt-get update && \
     libffi-dev \
     libopenblas-dev \
     cmake \
-    software-properties-common
+    software-properties-common \
+    bubblewrap
 
 # install arial
 RUN sudo add-apt-repository multiverse \
