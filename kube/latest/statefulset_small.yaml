@@ -3,6 +3,7 @@ kind: StatefulSet
 metadata:
     labels:
       app: darius
+    # name: statefulset-darius-puma
     name: statefulset-darius-small
     namespace: imsb
 spec:
@@ -26,6 +27,9 @@ spec:
         - name: volume-epyc
           persistentVolumeClaim:
             claimName: pvc-imsb-bonn-epyc
+        - name: darius-fc
+          persistentVolumeClaim:
+            claimName: pvc-fc-darius
         - name: dshm
           emptyDir:
             medium: Memory
@@ -35,7 +39,7 @@ spec:
           command:
           - sleep
           - infinity
-          image: human0815/cuda-conda:12.8.1-devel
+          image: human0815/cuda-conda:latest
           imagePullPolicy: Always
           name: darius
           resources:
@@ -43,7 +47,7 @@ spec:
               memory: 128Gi
               nvidia.com/gpu: "1"
             requests:
-              cpu: "20"
+              cpu: "64"
               memory: 128Gi
               nvidia.com/gpu: "1"
           volumeMounts:
@@ -56,6 +60,8 @@ spec:
           - mountPath: /epyc/projects/dschaub
             name: volume-deltabonn-6
             subPath: dschaub
+          - mountPath: /epyc/projects/dschaub/method-projects
+            name: darius-fc
           - mountPath: /bonn-epyc
             name: volume-epyc
           - mountPath: /dev/shm
@@ -64,11 +70,15 @@ spec:
         enableServiceLinks: true
         preemptionPolicy: PreemptLowerPriority
         priority: 0
+        # Optional GPU pin (replace nodeSelector below with a mapping):
+        # nodeSelector: {}
         nodeSelector:
-          nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
+          kubernetes.io/hostname: lion
+          # kubernetes.io/hostname: puma
+          # nvidia.com/gpu.product: NVIDIA-A100-SXM4-40GB
           # nvidia.com/gpu.product: NVIDIA-H100-PCIe
 
         restartPolicy: Always
         schedulerName: default-scheduler
         securityContext: {}
-        terminationGracePeriodSeconds: 30         
+        terminationGracePeriodSeconds: 30 
