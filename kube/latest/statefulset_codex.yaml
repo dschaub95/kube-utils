@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+    labels:
+      app: codex
+    name: statefulset-codex
+    namespace: imsb
+spec:
+    serviceName: codex
+    replicas: 1
+    selector:
+      matchLabels:
+        app: codex
+    template:
+      metadata:
+        labels:
+          app: codex
+      spec:
+        volumes:
+        - name: volume-poweredge
+          persistentVolumeClaim:
+            claimName: pvc-imsb-bonn-pe940
+        - name: volume-deltabonn-6
+          persistentVolumeClaim:
+            claimName: pvc-deltabonn-6
+        - name: volume-epyc
+          persistentVolumeClaim:
+            claimName: pvc-imsb-bonn-epyc
+        - name: workspace
+          emptyDir: {}
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+        containers:
+        - securityContext: {}
+          command:
+          - sleep
+          - infinity
+          image: human0815/cuda-conda:latest
+          imagePullPolicy: Always
+          name: codex
+          resources:
+            limits:
+              memory: 64Gi
+              nvidia.com/gpu: "1"
+            requests:
+              cpu: "32"
+              memory: 64Gi
+              nvidia.com/gpu: "1"
+          volumeMounts:
+          - mountPath: /poweredge
+            name: volume-poweredge
+            subPath: .
+            readOnly: true
+          - mountPath: /deltabonn-6
+            name: volume-deltabonn-6
+            subPath: .
+            readOnly: true
+          - mountPath: /epyc/projects/dschaub
+            name: volume-deltabonn-6
+            subPath: dschaub
+            readOnly: true
+          - mountPath: /bonn-epyc
+            name: volume-epyc
+            readOnly: true
+          - mountPath: /workspace
+            name: workspace
+          - mountPath: /dev/shm
+            name: dshm
+        dnsPolicy: ClusterFirst
+        enableServiceLinks: true
+        preemptionPolicy: PreemptLowerPriority
+        priority: 0
+        nodeSelector:
+          kubernetes.io/hostname: volta
+        restartPolicy: Always
+        schedulerName: default-scheduler
+        securityContext: {}
+        terminationGracePeriodSeconds: 30
