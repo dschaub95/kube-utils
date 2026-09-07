@@ -74,9 +74,38 @@ RUN apt-get update && \
     libjpeg-dev \
     libffi-dev \
     libopenblas-dev \
+    libasound2-dev \
+    libx11-dev \
+    libxrandr-dev \
+    libxi-dev \
+    libgl1-mesa-dev \
+    libglu1-mesa-dev \
+    libxcursor-dev \
+    libxinerama-dev \
+    libwayland-dev \
+    libxkbcommon-dev \
+    libqhull-dev \
+    cm-super-minimal \
+    dvipng \
+    texlive-fonts-recommended \
+    texlive-latex-base \
+    texlive-latex-extra \
+    xvfb \
     cmake \
     software-properties-common \
     bubblewrap
+
+# Build the raylib version used by Magna's C binding.
+ARG RAYLIB_VERSION=6.0
+RUN git clone --depth 1 --branch "${RAYLIB_VERSION}" \
+        https://github.com/raysan5/raylib.git /tmp/raylib \
+    && cmake -S /tmp/raylib -B /tmp/raylib/build \
+        -DBUILD_SHARED_LIBS=ON \
+        -DBUILD_EXAMPLES=OFF \
+    && cmake --build /tmp/raylib/build --parallel "$(nproc)" \
+    && cmake --install /tmp/raylib/build \
+    && ldconfig \
+    && rm -rf /tmp/raylib
 
 # install arial
 RUN sudo add-apt-repository multiverse \
@@ -129,6 +158,7 @@ RUN conda tos accept && \
     conda config --add envs_dirs "${CONDA_PATH}"
 
 # install uv
+ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
 
 # install nvm (Node.js version manager) and Codex CLI
@@ -144,18 +174,16 @@ RUN bash -c 'export PROFILE="$HOME/.bashrc" && \
 USER $USERNAME
 WORKDIR /home/$USERNAME
 
+ENV UV_BASE="/home/${USERNAME}/.uv-local"
+ENV UV_CACHE_DIR="${UV_BASE}/cache" \
+    UV_PYTHON_INSTALL_DIR="${UV_BASE}/python" \
+    UV_PYTHON_CACHE_DIR="${UV_BASE}/python-cache"
+
 # Create uv directories during build
-RUN mkdir -p "$HOME/.uv-local/cache" "$HOME/.uv-local/python" "$HOME/.uv-local/python-cache" "$HOME/.uv-local/venvs"
+RUN mkdir -p "$UV_CACHE_DIR" "$UV_PYTHON_INSTALL_DIR" "$UV_PYTHON_CACHE_DIR" "$UV_BASE/venvs"
 
 RUN <<'EOF'
 cat <<'BASHRC' >> "/home/$USERNAME/.bashrc"
-# ---- uv base dirs on local FS (inside container) ----
-export UV_BASE="$HOME/.uv-local"
-
-export UV_CACHE_DIR="$UV_BASE/cache"
-export UV_PYTHON_INSTALL_DIR="$UV_BASE/python"
-export UV_PYTHON_CACHE_DIR="$UV_BASE/python-cache"
-
 # Find project root by walking up until we see a marker file
 _uv_find_project_root() {
     local dir="$PWD"
