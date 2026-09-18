@@ -158,6 +158,7 @@ curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bas
 nvm install --lts
 nvm alias default 'lts/*'
 npm install -g @openai/codex
+grep -q nvm.sh "$HOME/.bashrc" || echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> "$HOME/.bashrc"
 EOF
 
 # configure uv to create venvs locally
