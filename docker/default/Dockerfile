@@ -1,16 +1,5 @@
 FROM nvidia/cuda:12.8.1-cudnn-devel-ubuntu24.04
 
-ARG CONDA_VER=latest
-ARG OS_TYPE=x86_64
-ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
-# Create a non-root user
-ARG USERNAME=dschaub
-ARG USER_UID=2856
-## we are using 1735 as our shared group instbonn
-ARG USER_GID=1735
-ARG GITHUB_NAME=dschaub95
-ARG GITHUB_EMAIL=schaub.darius@gmail.com
-
 # Set environment variables
 ENV LANGUAGE=C.UTF-8
 ENV LC_ALL=C.UTF-8
@@ -34,19 +23,11 @@ RUN if [ -z "$http_proxy$https_proxy" ]; then \
     fi
 
 
-# Create the user
-RUN groupadd --gid $USER_GID $USERNAME \
-    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME
-
-RUN apt-get update && apt-get install -y sudo \
-    && usermod -aG sudo $USERNAME \
-    && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
-    && chmod 0440 /etc/sudoers.d/${USERNAME}
-
 # System packages 
 RUN apt-get update && \
     apt-get upgrade -y && \
     apt-get install -y \
+    sudo \
     build-essential \
     curl \
     wget \
@@ -85,15 +66,11 @@ RUN apt-get update && \
     libwayland-dev \
     libxkbcommon-dev \
     libqhull-dev \
-    cm-super-minimal \
-    dvipng \
-    texlive-fonts-recommended \
-    texlive-latex-base \
-    texlive-latex-extra \
-    xvfb \
     cmake \
     software-properties-common \
-    bubblewrap
+    bubblewrap \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Build the raylib version used by Magna's C binding.
 ARG RAYLIB_VERSION=6.0
@@ -107,24 +84,28 @@ RUN git clone --depth 1 --branch "${RAYLIB_VERSION}" \
     && ldconfig \
     && rm -rf /tmp/raylib
 
-# install arial
-RUN sudo add-apt-repository multiverse \
-    && sudo apt-get update \
+# Plotting dependencies and Arial fonts
+RUN add-apt-repository -y multiverse \
+    && apt-get update \
+    && apt-get install -y \
+    cm-super-minimal \
+    dvipng \
+    texlive-fonts-recommended \
+    texlive-latex-base \
+    texlive-latex-extra \
+    xvfb \
     && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
-    | sudo debconf-set-selections \
-    && DEBIAN_FRONTEND=noninteractive sudo apt-get install -y --no-install-recommends \
+    | debconf-set-selections \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
     ttf-mscorefonts-installer \
-    && sudo fc-cache -f -v
-
-# clean up
-RUN apt-get clean && \
-    rm -rf /var/lib/apt/lists/*
-
-# set git config
-RUN git config --global user.name $GITHUB_NAME
-RUN git config --global user.email $GITHUB_EMAIL
+    && fc-cache -f -v \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
 
 # Install miniconda to /miniconda
+ARG CONDA_VER=latest
+ARG OS_TYPE=x86_64
+ARG CONDA_PATH=/epyc/projects/dschaub/miniconda/envs
 ENV PATH=/miniconda/bin:${PATH}
 RUN curl -LO "https://repo.anaconda.com/miniconda/Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh" && \
     bash Miniconda3-${CONDA_VER}-Linux-${OS_TYPE}.sh -p /miniconda -b && \
@@ -148,10 +129,39 @@ RUN python3 -m pip install pipx && \
 RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
     > /etc/sudoers.d/proxy && chmod 0440 /etc/sudoers.d/proxy
 
-# [Optional] Set the default user. Omit if you want to keep the default as root.
+ENV NVM_DIR=/usr/local/nvm
+RUN bash <<'EOF'
+set -euo pipefail
+mkdir -p "$NVM_DIR"
+touch /etc/profile.d/nvm.sh
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh \
+  | PROFILE=/etc/profile.d/nvm.sh bash
+. "$NVM_DIR/nvm.sh"
+nvm install --lts
+nvm alias default 'lts/*'
+npm install -g @openai/codex
+chmod -R a+rX "$NVM_DIR"
+node_bin="$(nvm which current)"
+node_dir="$(dirname "$node_bin")"
+for b in node npm npx codex; do
+  test -e "$node_dir/$b"
+  ln -sf "$node_dir/$b" "/usr/local/bin/$b"
+done
+echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> /etc/bash.bashrc
+EOF
+
+# Create the user after the shared system and Python installations.
+ARG USERNAME=dschaub
+ARG USER_UID=2856
+# Shared instbonn group
+ARG USER_GID=1735
+RUN groupadd --gid $USER_GID $USERNAME \
+    && useradd --uid $USER_UID --gid $USER_GID -m $USERNAME \
+    && usermod -aG sudo $USERNAME \
+    && echo "${USERNAME} ALL=(ALL) NOPASSWD:ALL" > /etc/sudoers.d/${USERNAME} \
+    && chmod 0440 /etc/sudoers.d/${USERNAME}
+
 USER $USERNAME
-RUN git config --global user.name $GITHUB_NAME && \
-    git config --global user.email $GITHUB_EMAIL
 RUN conda tos accept && \
     conda init && \
     conda config --set solver libmamba && \
@@ -160,15 +170,6 @@ RUN conda tos accept && \
 # install uv
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# install nvm (Node.js version manager) and Codex CLI
-RUN bash -c 'export PROFILE="$HOME/.bashrc" && \
-    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/master/install.sh | bash && \
-    export NVM_DIR="$HOME/.nvm" && \
-    [ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh" && \
-    nvm install --lts && \
-    nvm alias default '\''lts/*'\'' && \
-    npm install -g @openai/codex'
 
 # configure uv to create venvs locally
 USER $USERNAME
@@ -218,6 +219,16 @@ case "$PROMPT_COMMAND" in
 esac
 BASHRC
 EOF
+
+# Configure Git after installations so identity changes preserve their cache.
+USER root
+ARG GITHUB_NAME=dschaub95
+ARG GITHUB_EMAIL=schaub.darius@gmail.com
+RUN git config --global user.name "$GITHUB_NAME" \
+    && git config --global user.email "$GITHUB_EMAIL"
+USER $USERNAME
+RUN git config --global user.name "$GITHUB_NAME" \
+    && git config --global user.email "$GITHUB_EMAIL"
 
 # these are necessary when deploying to the kubernetes cluster
 ENV http_proxy="http://proxy.ims.bio:3128"
