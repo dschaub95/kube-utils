@@ -129,27 +129,6 @@ RUN python3 -m pip install pipx && \
 RUN echo 'Defaults  env_keep += "http_proxy https_proxy"' \
     > /etc/sudoers.d/proxy && chmod 0440 /etc/sudoers.d/proxy
 
-ENV NVM_DIR=/usr/local/nvm
-RUN bash <<'EOF'
-set -euo pipefail
-mkdir -p "$NVM_DIR"
-touch /etc/profile.d/nvm.sh
-curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh \
-  | PROFILE=/etc/profile.d/nvm.sh bash
-. "$NVM_DIR/nvm.sh"
-nvm install --lts
-nvm alias default 'lts/*'
-npm install -g @openai/codex
-chmod -R a+rX "$NVM_DIR"
-node_bin="$(nvm which current)"
-node_dir="$(dirname "$node_bin")"
-for b in node npm npx codex; do
-  test -e "$node_dir/$b"
-  ln -sf "$node_dir/$b" "/usr/local/bin/$b"
-done
-echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> /etc/bash.bashrc
-EOF
-
 # Create the user after the shared system and Python installations.
 ARG USERNAME=dschaub
 ARG USER_UID=2856
@@ -169,7 +148,17 @@ RUN conda tos accept && \
 
 # install uv
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
+ENV NVM_DIR="/home/${USERNAME}/.nvm"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+RUN bash <<'EOF'
+set -euo pipefail
+curl -fsSL https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+. "$HOME/.nvm/nvm.sh"
+nvm install --lts
+nvm alias default 'lts/*'
+npm install -g @openai/codex
+EOF
 
 # configure uv to create venvs locally
 USER $USERNAME
