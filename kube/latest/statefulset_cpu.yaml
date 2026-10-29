@@ -1,0 +1,189 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: darius-cpu
+  namespace: imsb
+spec:
+  clusterIP: None
+  selector:
+    app: darius-cpu
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: statefulset-darius-cpu
+  namespace: imsb
+  labels:
+    app: darius-cpu
+spec:
+  serviceName: darius-cpu
+  replicas: 1
+  selector:
+    matchLabels:
+      app: darius-cpu
+  template:
+    metadata:
+      labels:
+        app: darius-cpu
+    spec:
+      automountServiceAccountToken: false
+      enableServiceLinks: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 2856
+        runAsGroup: 1735
+        seccompProfile:
+          type: RuntimeDefault
+      nodeSelector:
+        env: imsb
+      volumes:
+        - name: volume-deltabonn-6
+          persistentVolumeClaim:
+            claimName: pvc-deltabonn-6
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
+      containers:
+        - name: darius
+          image: human0815/cuda-conda:latest
+          imagePullPolicy: Always
+          workingDir: /deltabonn6/dschaub
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          env:
+            - name: HOME
+              value: /home/dschaub
+            - name: NVM_DIR
+              value: /home/dschaub/.nvm
+            - name: BASH_ENV
+              value: /home/dschaub/.bash_env
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -eo pipefail
+              nvm_release="$(curl -fsSL https://api.github.com/repos/nvm-sh/nvm/releases/latest | jq -er '.tag_name')"
+              curl -fsSL "https://raw.githubusercontent.com/nvm-sh/nvm/$nvm_release/install.sh" | PROFILE=/dev/null bash
+              printf '%s\n' 'export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"' \
+                '. "$NVM_DIR/nvm.sh"' > "$BASH_ENV"
+              . "$BASH_ENV"
+              nvm install 24
+              nvm alias default 24
+              nvm use default
+              npm install -g npm@latest
+              export PATH="$HOME/.local/bin:$PATH"
+              npm install -g @openai/codex@latest
+              # Keep executable tools available without shell initialization.
+              mkdir -p "$HOME/.local/bin"
+              for tool in node npm npx codex; do
+                ln -sfn "$NVM_BIN/$tool" "$HOME/.local/bin/$tool"
+              done
+              bash -c 'nvm --version && node --version && npm --version'
+              sh -c 'node --version && npm --version'
+              curl -fsSL https://claude.ai/install.sh | bash
+              curl -fsSL https://cursor.com/install | bash
+
+              t3_release="$(curl -fsSL https://api.github.com/repos/pingdotgg/t3code/releases/latest | jq -er '.tag_name')"
+              case "$(dpkg --print-architecture)" in
+                amd64) t3_arch=x64 ;;
+                arm64) t3_arch=arm64 ;;
+                *) echo 'Unsupported T3 Code architecture' >&2; exit 1 ;;
+              esac
+              t3_archive="t3-${t3_release#v}-linux-$t3_arch.tar.gz"
+              t3_tmp="$(mktemp -d)"
+              t3_dir="$HOME/.t3/runtime/versions/${t3_release#v}"
+              curl -fsSL "https://github.com/pingdotgg/t3code/releases/download/$t3_release/SHA256SUMS" -o "$t3_tmp/SHA256SUMS"
+              curl -fsSL "https://github.com/pingdotgg/t3code/releases/download/$t3_release/$t3_archive" -o "$t3_tmp/$t3_archive"
+              (cd "$t3_tmp" && sha256sum --check --ignore-missing SHA256SUMS)
+              mkdir -p "$t3_dir"
+              tar -xzf "$t3_tmp/$t3_archive" --strip-components=1 -C "$t3_dir"
+              rm -rf "$t3_tmp"
+              # Oracle UEK rejects PT_NOTE file sizes over 4 MiB. Keep the
+              # memory size and executable code intact: t3code issue #12628.
+              python3 - "$t3_dir/t3" <<'PY'
+              import platform
+              import struct
+              import sys
+
+              if 'uek' in platform.release():
+                  with open(sys.argv[1], 'r+b') as binary:
+                      header = binary.read(64)
+                      if header[:6] != b'\x7fELF\x02\x01':
+                          raise SystemExit('Expected a little-endian ELF64 T3 executable')
+                      phoff = struct.unpack_from('<Q', header, 32)[0]
+                      phsize, phnum = struct.unpack_from('<HH', header, 54)
+                      for index in range(phnum):
+                          offset = phoff + index * phsize
+                          binary.seek(offset)
+                          segment = struct.unpack('<IIQQQQQQ', binary.read(56))
+                          if segment[0] == 4 and segment[5] > 4 * 1024 * 1024:
+                              binary.seek(offset + 32)
+                              binary.write(struct.pack('<Q', 4 * 1024 * 1024))
+                              print('Applied T3 Code Oracle UEK note-size workaround')
+              PY
+              ln -sfn "$t3_dir/t3" "$HOME/.local/bin/t3"
+
+              tailscale_archive="$(curl -fsSL 'https://pkgs.tailscale.com/stable/?mode=json' |
+                jq -er --arg arch "$(dpkg --print-architecture)" '.Tarballs[$arch]')"
+              tailscale_tmp="$(mktemp -d)"
+              curl -fsSL "https://pkgs.tailscale.com/stable/$tailscale_archive" -o "$tailscale_tmp/tailscale.tgz"
+              tar -xzf "$tailscale_tmp/tailscale.tgz" --strip-components=1 -C "$tailscale_tmp"
+              mkdir -p "$HOME/.local/lib/tailscale" "$HOME/.local/state/tailscale"
+              install -m 755 "$tailscale_tmp/tailscale" "$HOME/.local/lib/tailscale/tailscale"
+              install -m 755 "$tailscale_tmp/tailscaled" "$HOME/.local/bin/tailscaled"
+              rm -rf "$tailscale_tmp"
+              # Use the same user-owned daemon socket for the CLI and T3 Code.
+              printf '%s\n' '#!/bin/sh' \
+                'exec "$HOME/.local/lib/tailscale/tailscale" --socket="$HOME/.local/state/tailscale/tailscaled.sock" "$@"' \
+                > "$HOME/.local/bin/tailscale"
+              chmod 755 "$HOME/.local/bin/tailscale"
+
+              codex --version
+              claude --version
+              agent --version
+              tailscale version
+              t3 --version
+
+              pids=()
+              cleanup() {
+                if [ "${#pids[@]}" -gt 0 ]; then
+                  kill "${pids[@]}" 2>/dev/null || true
+                  wait "${pids[@]}" 2>/dev/null || true
+                fi
+              }
+              trap cleanup EXIT
+              trap 'exit 0' TERM INT
+              tailscaled --tun=userspace-networking \
+                --statedir="$HOME/.local/state/tailscale" \
+                --socket="$HOME/.local/state/tailscale/tailscaled.sock" &
+              pids+=("$!")
+              t3 serve --host 127.0.0.1 --port 3773 &
+              pids+=("$!")
+              wait -n "${pids[@]}"
+          readinessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - -c
+                - test -S "$HOME/.local/state/tailscale/tailscaled.sock" && curl --noproxy '*' -fsS -o /dev/null http://127.0.0.1:3773/
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: "16"
+              memory: 32Gi
+            limits:
+              cpu: "16"
+              memory: 32Gi
+          volumeMounts:
+            # Expose only this PVC subdirectory, never the volume root.
+            - name: volume-deltabonn-6
+              mountPath: /deltabonn6/dschaub
+              subPath: dschaub
+              readOnly: false
+            - name: dshm
+              mountPath: /dev/shm
+      terminationGracePeriodSeconds: 30
