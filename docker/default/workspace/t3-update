@@ -1,0 +1,35 @@
+#!/bin/bash
+# Swap the supervised T3 server to version $1 (default: latest stable release) without restarting the container;
+# roll back if it isn't healthy. Run detached, e.g. `setsid nohup t3-update >> "$T3_STATE_DIR/update.log" 2>&1 &`, as it kills the T3 that runs the agent that launches it.
+s="${T3_STATE_DIR:?}"; new=${1:-latest}; old=$(cat "$s/t3-version")
+log() { echo "$(date -u +%FT%TZ) $*"; }
+if [ "$new" = latest ]; then
+  new=$(curl -fsSL https://api.github.com/repos/pingdotgg/t3code/releases/latest | jq -er .tag_name) || { log "could not look up the latest T3 release"; exit 1; }
+  new=${new#v}
+fi
+[ "$new" != "$old" ] || { log "already on $old"; exit 0; }
+health() { [ "$(curl --noproxy '*' -s -o /dev/null --max-time 3 -w '%{http_code}' http://127.0.0.1:3773/)" = 200 ]; }
+wrapper() { printf '#!/bin/sh\nexec "%s/ld.so" "%s/t3" "$@"\n' "$s/runtime/versions/$1" "$s/runtime/versions/$1" > "$HOME/.local/bin/t3"; }
+serve_pid() { pgrep -f "runtime/versions/$1/t3 serve --host 127.0.0.1 --port 3773"; }
+sleep 3
+d=$s/runtime/versions/$new
+if [ ! -x "$d/t3" ]; then
+  t=$(mktemp -d); u=https://github.com/pingdotgg/t3code/releases/download/v$new; a=t3-$new-linux-x64.tar.gz
+  curl -fsSL "$u/SHA256SUMS" -o "$t/SHA256SUMS" && curl -fsSL "$u/$a" -o "$t/$a" && (cd "$t" && sha256sum --check --ignore-missing SHA256SUMS) \
+    && mkdir -p "$d" && tar -xzf "$t/$a" --strip-components=1 -C "$d" || { log "download of $new failed"; rm -rf "$t"; exit 1; }
+  rm -rf "$t"
+fi
+install -m 755 "$(readlink -f /lib64/ld-linux-x86-64.so.2)" "$d/ld.so"
+echo "$new" > "$s/t3-version"
+wrapper $new
+log "killing $old serve $(serve_pid $old)"
+kill $(serve_pid $old)
+for i in $(seq 60); do
+  sleep 5
+  if serve_pid $new >/dev/null && health; then log "$new healthy after ~$((i*5))s (pid $(serve_pid $new))"; exit 0; fi
+done
+log "$new not healthy; rolling back to $old"
+echo "$old" > "$s/t3-version"; wrapper $old
+kill $(serve_pid $new) 2>/dev/null
+for i in $(seq 36); do sleep 5; serve_pid $old >/dev/null && health && { log "rolled back, $old healthy"; exit 0; }; done
+log "ROLLBACK FAILED"

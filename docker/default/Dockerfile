@@ -67,8 +67,23 @@ RUN apt-get update && \
     libxkbcommon-dev \
     libqhull-dev \
     cmake \
+    clang \
+    lld \
+    clang-format \
+    clang-tidy \
+    procps \
     software-properties-common \
     bubblewrap \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# Tailscale from its official apt repository; workspace-start runs tailscaled in userspace mode as the user.
+RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
+        -o /usr/share/keyrings/tailscale-archive-keyring.gpg \
+    && curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.tailscale-keyring.list \
+        -o /etc/apt/sources.list.d/tailscale.list \
+    && apt-get update \
+    && apt-get install -y tailscale \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -161,6 +176,10 @@ npm install -g @openai/codex
 grep -q nvm.sh "$HOME/.bashrc" || echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> "$HOME/.bashrc"
 EOF
 
+# Claude Code and Cursor CLI; workspace-start updates them, like codex, on each start.
+RUN curl -fsSL https://claude.ai/install.sh | bash \
+    && curl -fsS https://cursor.com/install | bash
+
 # configure uv to create venvs locally
 USER $USERNAME
 WORKDIR /home/$USERNAME
@@ -219,6 +238,18 @@ RUN git config --global user.name "$GITHUB_NAME" \
 USER $USERNAME
 RUN git config --global user.name "$GITHUB_NAME" \
     && git config --global user.email "$GITHUB_EMAIL"
+
+# Workspace entrypoint: T3 supervisor with PVC snapshots, in-place T3 updates, optional Tailscale.
+# A deployment sets T3_STATE_DIR (and TAILSCALE_STATE_DIR for Tailscale) and runs workspace-start.
+USER root
+COPY workspace/workspace-start workspace/t3-supervisor workspace/t3-update workspace/tailscale /usr/local/bin/
+COPY workspace/t3-backup.py /usr/local/lib/t3-workspace/
+RUN chmod 755 /usr/local/bin/workspace-start /usr/local/bin/t3-supervisor /usr/local/bin/t3-update /usr/local/bin/tailscale \
+    && chmod 644 /usr/local/lib/t3-workspace/t3-backup.py
+USER $USERNAME
+# Version a workspace starts with until t3-update records another in $T3_STATE_DIR/t3-version.
+ENV T3_DEFAULT_VERSION=0.1.11
+ENV TAILSCALE_SOCKET="/home/${USERNAME}/.local/state/tailscale/tailscaled.sock"
 
 # these are necessary when deploying to the kubernetes cluster
 ENV http_proxy="http://proxy.ims.bio:3128"

@@ -1,0 +1,3 @@
+#!/bin/sh
+# Point the CLI, including when T3 invokes it, at the user-owned tailscaled socket.
+exec /usr/bin/tailscale --socket="$TAILSCALE_SOCKET" "$@"

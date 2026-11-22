@@ -2,6 +2,10 @@ name: docker
 
 on:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: Image tag to push (use a test tag before replacing latest)
+        default: latest
 
 jobs:
   publish:
@@ -21,4 +25,4 @@ jobs:
           context: docker/default
           file: docker/default/Dockerfile
           push: true
-          tags: human0815/cuda-conda:latest
+          tags: human0815/cuda-conda:${{ inputs.tag }}
