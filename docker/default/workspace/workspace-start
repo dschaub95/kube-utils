@@ -1,0 +1,28 @@
+#!/bin/bash
+# Container entrypoint for agent workspaces. Configure it with environment variables:
+#   T3_STATE_DIR         this workspace's directory on the PVC (required); holds the T3 version, runtimes and snapshots
+#   TAILSCALE_STATE_DIR  set to run tailscaled with its identity and Serve config on the PVC (optional)
+# If T3 fails, the container stays up so the pod can still be exec'd into.
+. "$HOME/.nvm/nvm.sh"
+export PATH="$HOME/.local/bin:$PATH"
+# The image ships these tools; refresh them, but never block startup on it.
+codex update || true
+claude update || true
+agent update || true
+agy update || true
+
+if [ -n "${TAILSCALE_STATE_DIR:-}" ]; then
+  mkdir -p -m 700 "$TAILSCALE_STATE_DIR" "${TAILSCALE_SOCKET%/*}"
+  while true; do
+    /usr/sbin/tailscaled --tun=userspace-networking --statedir="$TAILSCALE_STATE_DIR" --socket="$TAILSCALE_SOCKET" || true
+    echo 'tailscaled exited; restarting in 5 seconds' >&2
+    sleep 5
+  done &
+fi
+
+t3-supervisor &
+supervisor_pid=$!
+trap 'kill -TERM "$supervisor_pid" 2>/dev/null; wait "$supervisor_pid"; pkill -TERM -x tailscaled; exit 0' TERM INT
+wait "$supervisor_pid" || echo "t3-supervisor exited with status $?; T3 is down" >&2
+sleep infinity &
+wait $!

@@ -1,0 +1,125 @@
+#!/bin/bash
+# Supervise `t3 serve` for one workspace. Everything that must survive the container lives in $T3_STATE_DIR on the PVC:
+# the T3 version (t3-version), downloaded runtimes, and snapshots of T3's userdata and ~/.claude.
+. "$HOME/.nvm/nvm.sh"
+export PATH="$HOME/.local/bin:$PATH"
+# Never pass a launching shell's UV_PROJECT_ENVIRONMENT on to T3 and its agents; ~/.bashrc's uv() sets it per call
+unset UV_PROJECT_ENVIRONMENT
+# Keep the live SQLite databases local; store recoverable snapshots on the PVC.
+set -euo pipefail
+umask 077
+state_dir="${T3_STATE_DIR:?set T3_STATE_DIR to the workspace directory on the PVC}"
+mkdir -p "$state_dir"
+[ -s "$state_dir/t3-version" ] || echo "$T3_DEFAULT_VERSION" > "$state_dir/t3-version"
+t3_version="$(cat "$state_dir/t3-version")"
+backup=/usr/local/lib/t3-workspace/t3-backup.py
+t3_dir="$state_dir/runtime/versions/$t3_version"
+mkdir -p "$state_dir/userdata" "$t3_dir" "$HOME/.t3" "$HOME/.local/bin"
+exec 9>"$state_dir/serve.lock"
+flock -n 9 || { echo 'T3 supervisor is already running' >&2; exit 1; }
+if [ ! -e "$HOME/.t3/userdata" ]; then
+  restore_dir="$state_dir/userdata"
+  if [ -f "$state_dir/snapshot/.complete" ]; then
+    restore_dir="$state_dir/snapshot"
+  fi
+  cp -R --preserve=timestamps "$restore_dir" "$HOME/.t3/userdata"
+fi
+test ! -L "$HOME/.t3/userdata"
+# Claude Code keeps its transcripts, memory and login in ~/.claude and ~/.claude.json.
+# Restore without overwriting, skipping per-process runtime state.
+claude_snapshot="$state_dir/claude-snapshot"
+if [ -f "$claude_snapshot/claude/.complete" ]; then
+  mkdir -p "$HOME/.claude"
+  for entry in "$claude_snapshot/claude"/* "$claude_snapshot/claude"/.[!.]*; do
+    [ -e "$entry" ] || continue
+    case "${entry##*/}" in .complete|sessions|session-env|ide|shell-snapshots) continue ;; esac
+    cp -R --update=none --preserve=timestamps "$entry" "$HOME/.claude/"
+  done
+  if [ -f "$claude_snapshot/claude.json" ]; then
+    cp --update=none --preserve=timestamps "$claude_snapshot/claude.json" "$HOME/.claude.json"
+  fi
+fi
+
+if [ ! -x "$t3_dir/t3" ]; then
+  t3_archive="t3-$t3_version-linux-x64.tar.gz"
+  t3_tmp="$(mktemp -d)"
+  t3_url="https://github.com/pingdotgg/t3code/releases/download/v$t3_version"
+  curl -fsSL "$t3_url/SHA256SUMS" -o "$t3_tmp/SHA256SUMS"
+  curl -fsSL "$t3_url/$t3_archive" -o "$t3_tmp/$t3_archive"
+  (cd "$t3_tmp" && sha256sum --check --ignore-missing SHA256SUMS)
+  tar -xzf "$t3_tmp/$t3_archive" --strip-components=1 -C "$t3_dir"
+  rm -rf "$t3_tmp"
+fi
+# Oracle UEK rejects T3's oversized ELF note, so invoke the loader directly; this works on every kernel,
+# and t3-update finds the server by this command line.
+install -m 755 "$(readlink -f /lib64/ld-linux-x86-64.so.2)" "$t3_dir/ld.so"
+printf '#!/bin/sh\nexec "%s/ld.so" "%s/t3" "$@"\n' "$t3_dir" "$t3_dir" > "$HOME/.local/bin/t3"
+chmod 755 "$HOME/.local/bin/t3"
+
+# R 4.6 for the fastersom benchmark's R implementations lives on NFS; link it back into the ephemeral home
+r_prefix=/deltabonn-6/dschaub/tools/r-4.6
+if [ -x "$r_prefix/bin/Rscript" ]; then
+  ln -sfn "$r_prefix/bin/Rscript" "$HOME/.local/bin/Rscript"
+  ln -sfn "$r_prefix/bin/R" "$HOME/.local/bin/R"
+fi
+
+# gh and its login live on NFS; link them back and let git use gh for GitHub credentials
+gh_dir=/deltabonn-6/dschaub/tools
+if [ -x "$gh_dir/gh/bin/gh" ]; then
+  ln -sfn "$gh_dir/gh/bin/gh" "$HOME/.local/bin/gh"
+  mkdir -p "$HOME/.config"
+  [ -e "$HOME/.config/gh" ] || ln -sfn "$gh_dir/gh-config" "$HOME/.config/gh"
+  "$HOME/.local/bin/gh" auth setup-git >/dev/null 2>&1 || true
+fi
+
+python3 "$backup" "$HOME/.t3/userdata" "$state_dir/snapshot" loop >> "$state_dir/backup.log" 2>&1 9>&- &
+backup_pid=$!
+backup_claude() {
+  [ -d "$HOME/.claude" ] || return 0
+  python3 "$backup" "$HOME/.claude" "$claude_snapshot/claude" once
+  if [ -f "$HOME/.claude.json" ]; then
+    cp --preserve=timestamps "$HOME/.claude.json" "$claude_snapshot/claude.json.tmp"
+    mv "$claude_snapshot/claude.json.tmp" "$claude_snapshot/claude.json"
+  fi
+}
+(
+  while true; do
+    sleep 300
+    backup_claude || echo "$(date -u +%Y-%m-%dT%H:%M:%SZ) Claude snapshot failed"
+  done
+) >> "$state_dir/claude-backup.log" 2>&1 9>&- &
+claude_backup_pid=$!
+t3_pid=
+watchdog_pid=
+trap 'trap - TERM INT; kill "$watchdog_pid" "$backup_pid" "$claude_backup_pid" 2>/dev/null || true; if [ -n "$t3_pid" ]; then kill "$t3_pid" 2>/dev/null || true; sleep 10; kill -KILL "$t3_pid" 2>/dev/null || true; wait "$t3_pid" || true; fi; python3 "$backup" "$HOME/.t3/userdata" "$state_dir/snapshot" once || true; backup_claude >> "$state_dir/claude-backup.log" 2>&1 || true; exit 0' TERM INT
+while true; do
+  t3 serve --host 127.0.0.1 --port 3773 >> "$state_dir/serve.log" 2>&1 9>&- &
+  t3_pid=$!
+  (
+    sleep 90
+    failures=0
+    while kill -0 "$t3_pid" 2>/dev/null; do
+      if curl --noproxy '*' -fsS --max-time 5 -o /dev/null http://127.0.0.1:3773/; then
+        failures=0
+      else
+        failures=$((failures + 1))
+        if [ "$failures" -ge 3 ]; then
+          echo 'T3 failed three HTTP health checks; restarting' >&2
+          kill "$t3_pid" 2>/dev/null || true
+          sleep 10
+          kill -KILL "$t3_pid" 2>/dev/null || true
+          exit 0
+        fi
+      fi
+      sleep 10
+    done
+  ) 9>&- &
+  watchdog_pid=$!
+  status=0
+  wait "$t3_pid" || status=$?
+  kill "$watchdog_pid" 2>/dev/null || true
+  wait "$watchdog_pid" 2>/dev/null || true
+  t3_pid=
+  echo "T3 exited with status $status; restarting in 5 seconds" >&2
+  sleep 5
+done
