@@ -176,9 +176,10 @@ npm install -g @openai/codex
 grep -q nvm.sh "$HOME/.bashrc" || echo '[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"' >> "$HOME/.bashrc"
 EOF
 
-# Claude Code and Cursor CLI; workspace-start updates them, like codex, on each start.
+# Claude Code, Cursor and Antigravity CLIs; workspace-start updates them, like codex, on each start.
 RUN curl -fsSL https://claude.ai/install.sh | bash \
-    && curl -fsS https://cursor.com/install | bash
+    && curl -fsS https://cursor.com/install | bash \
+    && curl -fsSL https://antigravity.google/cli/install.sh | bash
 
 # configure uv to create venvs locally
 USER $USERNAME

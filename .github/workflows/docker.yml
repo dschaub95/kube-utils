@@ -6,6 +6,11 @@ on:
       tag:
         description: Image tag to push (use a test tag before replacing latest)
         default: latest
+  # Pull requests only build the image to check it; they never push.
+  pull_request:
+    paths:
+      - docker/default/**
+      - .github/workflows/docker.yml
 
 jobs:
   publish:
@@ -13,7 +18,8 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - uses: docker/login-action@v3
+      - if: github.event_name == 'workflow_dispatch'
+        uses: docker/login-action@v3
         with:
           username: human0815
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -24,5 +30,5 @@ jobs:
         with:
           context: docker/default
           file: docker/default/Dockerfile
-          push: true
-          tags: human0815/cuda-conda:${{ inputs.tag }}
+          push: ${{ github.event_name == 'workflow_dispatch' }}
+          tags: human0815/cuda-conda:${{ inputs.tag || 'pr' }}

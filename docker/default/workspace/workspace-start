@@ -9,6 +9,7 @@ export PATH="$HOME/.local/bin:$PATH"
 codex update || true
 claude update || true
 agent update || true
+agy update || true
 
 if [ -n "${TAILSCALE_STATE_DIR:-}" ]; then
   mkdir -p -m 700 "$TAILSCALE_STATE_DIR" "${TAILSCALE_SOCKET%/*}"
