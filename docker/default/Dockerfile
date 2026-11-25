@@ -99,7 +99,7 @@ RUN git clone --depth 1 --branch "${RAYLIB_VERSION}" \
     && ldconfig \
     && rm -rf /tmp/raylib
 
-# Plotting dependencies and Arial fonts
+# LaTeX (pdflatex, xelatex, lualatex, biber, latexmk), plotting dependencies and Arial fonts
 RUN add-apt-repository -y multiverse \
     && apt-get update \
     && apt-get install -y \
@@ -108,6 +108,12 @@ RUN add-apt-repository -y multiverse \
     texlive-fonts-recommended \
     texlive-latex-base \
     texlive-latex-extra \
+    texlive-science \
+    texlive-bibtex-extra \
+    biber \
+    texlive-xetex \
+    texlive-luatex \
+    latexmk \
     xvfb \
     && echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula select true" \
     | debconf-set-selections \
