@@ -72,6 +72,7 @@ RUN apt-get update && \
     clang-format \
     clang-tidy \
     procps \
+    time \
     software-properties-common \
     bubblewrap \
     && apt-get clean \
