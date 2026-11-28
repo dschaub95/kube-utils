@@ -83,11 +83,10 @@ RUN apt-get update && \
     pandoc \
     postgresql \
     openjdk-21-jre-headless \
-    && ln -s "$(ls -d /usr/lib/postgresql/*/ | head -n 1)" /usr/lib/postgresql/current \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 # PostgreSQL server tools (initdb, pg_ctl, postgres) for a user-owned dev cluster on a persistent volume.
-ENV PATH="${PATH}:/usr/lib/postgresql/current/bin"
+ENV PATH="${PATH}:/usr/lib/postgresql/16/bin"
 
 # Tailscale from its official apt repository; workspace-start runs tailscaled in userspace mode as the user.
 RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
