@@ -35,6 +35,9 @@ RUN apt-get update && \
     jq \
     zip \
     git \
+    git-lfs \
+    ccache \
+    python3-dev \
     screen \
     ffmpeg \
     libsm6 \
@@ -66,16 +69,24 @@ RUN apt-get update && \
     libwayland-dev \
     libxkbcommon-dev \
     libqhull-dev \
+    libomp-dev \
+    libglpk-dev \
     cmake \
     clang \
     lld \
     clang-format \
     clang-tidy \
     procps \
+    time \
     software-properties-common \
     bubblewrap \
+    pandoc \
+    postgresql \
+    openjdk-21-jre-headless \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
+# PostgreSQL server tools (initdb, pg_ctl, postgres) for a user-owned dev cluster on a persistent volume.
+ENV PATH="${PATH}:/usr/lib/postgresql/16/bin"
 
 # Tailscale from its official apt repository; workspace-start runs tailscaled in userspace mode as the user.
 RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
@@ -84,6 +95,18 @@ RUN curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/noble.noarmor.gpg \
         -o /etc/apt/sources.list.d/tailscale.list \
     && apt-get update \
     && apt-get install -y tailscale \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+# R from CRAN's Ubuntu repository; the system libraries above cover common source package builds.
+# System directories come first on R's PATH so packages build against them, not conda's libraries.
+RUN curl -fsSL https://cloud.r-project.org/bin/linux/ubuntu/marutter_pubkey.asc \
+        | gpg --dearmor -o /usr/share/keyrings/cran-archive-keyring.gpg \
+    && echo "deb [signed-by=/usr/share/keyrings/cran-archive-keyring.gpg] https://cloud.r-project.org/bin/linux/ubuntu noble-cran40/" \
+        > /etc/apt/sources.list.d/cran.list \
+    && apt-get update \
+    && apt-get install -y --no-install-recommends r-base r-base-dev \
+    && echo 'PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH}' >> /etc/R/Renviron.site \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -103,7 +126,7 @@ RUN git clone --depth 1 --branch "${RAYLIB_VERSION}" \
 RUN add-apt-repository -y multiverse \
     && apt-get update \
     && apt-get install -y \
-    cm-super-minimal \
+    cm-super \
     dvipng \
     texlive-fonts-recommended \
     texlive-latex-base \
@@ -171,6 +194,9 @@ RUN conda tos accept && \
 ENV PATH="/home/${USERNAME}/.local/bin:${PATH}"
 ENV NVM_DIR="/home/${USERNAME}/.nvm"
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# R's default per-user library, so install.packages works without root.
+RUN Rscript -e 'dir.create(Sys.getenv("R_LIBS_USER"), recursive = TRUE)'
 
 RUN bash <<'EOF'
 set -euo pipefail
